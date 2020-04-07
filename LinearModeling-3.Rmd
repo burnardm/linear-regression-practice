@@ -136,7 +136,7 @@ anova(iris.lmf, iris.lmr) #choose the additive model
 
 Like in the simple linear regression model, we will ad the fitted lines to see what's happening.
 
-```{r plot1}
+```{r plot1a}
 ggplot(data=iris,
        aes(y=Petal.Width, x=Petal.Length, colour=Species)) +
   theme_bw() +
