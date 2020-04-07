@@ -1,0 +1,114 @@
+---
+title: "linear regression practice"
+author: "mb"
+date: "4/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Data 
+
+
+```{r iris}
+glimpse(iris)
+```
+
+# Hypothesis
+
+Does Petal Width increase when Petal Length increases?
+
+```{r plot1}
+ggplot(data=iris %>% filter(Species == "setosa"),
+       aes(y=Petal.Width, x=Petal.Length)) +
+  theme_bw() +
+  geom_point()
+```
+# Simple model (1 species)
+
+```{r model1}
+iris.lms <- lm(Petal.Width ~ Petal.Length, 
+               data=iris %>% filter(Species == "setosa"))
+
+summary(iris.lms)
+```
+
+```{r assessment1}
+plot(iris.lms)
+```
+
+```{r plot2}
+ggplot(data=iris %>% filter(Species == "setosa"),
+       aes(y=Petal.Width, x=Petal.Length)) +
+  theme_bw() +
+  geom_point() +
+  geom_abline(slope=0.20125, intercept=-0.04822, linetype=2, colour="#FF0000")
+```
+
+```{r prediction1}
+y = m * x + b
+0.20125 * (1.8) + -0.04822
+```
+
+```{r prediction2}
+newvalues = data.frame(Petal.Length = c(1.1, 1.5, 1.25, 2))
+iris.pred <- as.data.frame(predict(iris.lms, newvalues, interval="confidence"))
+glimpse(iris.pred)
+iris.pred$Petal.Length = newvalues$Petal.Length
+```
+
+```{r plot3}
+ggplot(data=iris %>% filter(Species == "setosa"),
+       aes(y=Petal.Width, x=Petal.Length)) +
+  theme_bw() +
+  geom_point() +
+  geom_abline(slope=0.20125, intercept=-0.04822, linetype=2, colour="#FF0000") +
+  geom_pointrange(data=iris.pred, aes(y=fit, ymin=lwr, ymax=upr,
+                                      x=Petal.Length),
+                  shape=1, colour="#0000FF")
+```
+
+```{r iris-all-species}
+iris.lmf <- lm(Petal.Width~Petal.Length * Species, data=iris)
+iris.lmr <- lm(Petal.Width~Petal.Length + Species, data=iris)
+summary(iris.lmf)
+summary(iris.lmr)
+anova(iris.lmf, iris.lmr)
+```
+
+```{r plot1}
+ggplot(data=iris,
+       aes(y=Petal.Width, x=Petal.Length, colour=Species)) +
+  theme_bw() +
+  geom_point() +
+  geom_abline(slope=0.23039, intercept=-0.09083, colour="#FF0000") +
+  geom_abline(slope=0.23039, intercept=-0.09083+0.43537, colour="#00FF00") +
+  geom_abline(slope=0.23039, intercept=-0.09038+0.83771, colour="#0000FF")
+```
+
+```{r predict2}
+newdata <- data.frame(Petal.Length = c(2.5, 2.75, 3.5),
+                      Species = c("setosa", "versicolor", "virginica"))
+
+pred <- as.data.frame(predict(iris.lmr, newdata, interval="confidence"))
+
+iris.pred2 <- bind_cols(pred, newdata)
+glimpse(iris.pred2)
+```
+```{r plot4}
+ggplot(data=iris,
+       aes(y=Petal.Width, x=Petal.Length, colour=Species)) +
+  theme_bw() +
+  geom_point() +
+  geom_abline(slope=0.23039, intercept=-0.09083, colour="#FF0000") +
+  geom_abline(slope=0.23039, intercept=-0.09083+0.43537, colour="#00FF00") +
+  geom_abline(slope=0.23039, intercept=-0.09038+0.83771, colour="#0000FF") +
+  geom_pointrange(data=iris.pred2,
+  aes(y=fit, x=Petal.Length, 
+  ymax=upr, ymin=lwr, colour=Species), shape=1)
+```
+
+
