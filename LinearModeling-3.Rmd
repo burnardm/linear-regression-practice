@@ -12,6 +12,7 @@ library(tidyverse)
 
 # Data 
 
+First we start with the data. We will use the iris data set again, but this time consider the relationship between Petal length and Petal Width.
 
 ```{r iris}
 glimpse(iris)
@@ -19,8 +20,15 @@ glimpse(iris)
 
 # Hypothesis
 
+Linear regression is useful for prediction and hypothesis testing. 
+
+We will start our exploration with a question:
+
 Does Petal Width increase when Petal Length increases?
 
+The first thing we can check is a plot...
+
+We'll start with only one species for now to keep things simple.
 ```{r plot1}
 ggplot(data=iris %>% filter(Species == "setosa"),
        aes(y=Petal.Width, x=Petal.Length)) +
@@ -29,37 +37,75 @@ ggplot(data=iris %>% filter(Species == "setosa"),
 ```
 # Simple model (1 species)
 
+We use the lm() function to fit a model, using formula notation.
+
+If our normal formula is: y = mx + b
+
+and y is our dependent variable, and x is our independent variable
+
+base on our data our formula is Petal.Width = m * Petal.Length + b
+
+So, with linear regression we are asking the function to find the best fit line and return m - the slope - and b - the intercept.
+
+We translate this to formula notation in R as:
+
+Petal.Width ~ Petal.Length
+
+The function will figure out the slope and intercept for us.
 ```{r model1}
 iris.lms <- lm(Petal.Width ~ Petal.Length, 
                data=iris %>% filter(Species == "setosa"))
 
+#The summary function allows us to get the information we need
 summary(iris.lms)
 ```
+In the summary above, the Estimate for (Intercept) is as it says, the intercept. The "b" in our y=mx+b formula. The slope is the estimate for Petal.Length.
 
+## Inspecting model fit   
+
+We also need to check if the model fits, the best way is to visually inspect a few plots. 
 ```{r assessment1}
 plot(iris.lms)
 ```
+The model is "okay" ... not ideal. 
+
+Lets use the data from the summary to see how the regression fits our data.
 
 ```{r plot2}
 ggplot(data=iris %>% filter(Species == "setosa"),
        aes(y=Petal.Width, x=Petal.Length)) +
   theme_bw() +
   geom_point() +
+  # we just add an "abline" with the slope frome the ESTIMATE for Petal.Length
+  # and we use the (intercept) Estimate for intercept.
   geom_abline(slope=0.20125, intercept=-0.04822, linetype=2, colour="#FF0000")
 ```
+## Predicting new values   
+
+One of the things we often want to do with a linear model is predict another y for an x that isn't in our data set. We can do it siply for a single value with a little math:
 
 ```{r prediction1}
-y = m * x + b
+#y = m * x + b
 0.20125 * (1.8) + -0.04822
 ```
 
+However, this is such a common thing to do, there is a built in function do it:
+
+predict() takes the model we want to base our predictions on - in our case iris.lm, a set of new data (new x's, or petal lengths) to make predictions for. Generally we want to ask for some prediction some sort of estimation error to include, so we use the interval argument. 
+
+Some notes about intervals: during the lecture I focused on confidence intervals. Confidence intervals are most appropriate for stating the error around the data you provided the model. Prediction intervals are much wider, and are best when predicting new data. It would have been better to use prediction interval for our new data.
 ```{r prediction2}
-newvalues = data.frame(Petal.Length = c(1.1, 1.5, 1.25, 2))
+#create a new set of data with the same column name as our previous predictor variable.
+newvalues <- data.frame(Petal.Length = c(1.1, 1.5, 1.25, 2))
+#get the predictions and save them as a dataframe
 iris.pred <- as.data.frame(predict(iris.lms, newvalues, interval="confidence"))
+#take a quick look at the data.
 glimpse(iris.pred)
+#add the new data to the prediction data frame so we can plot it.
 iris.pred$Petal.Length = newvalues$Petal.Length
 ```
 
+We recreate teh previous plot, but add the predicted values with their confidence intervals.
 ```{r plot3}
 ggplot(data=iris %>% filter(Species == "setosa"),
        aes(y=Petal.Width, x=Petal.Length)) +
@@ -71,33 +117,54 @@ ggplot(data=iris %>% filter(Species == "setosa"),
                   shape=1, colour="#0000FF")
 ```
 
+## multiple linear regression 
+
+Here we include the other species, again in a interaction model and an additive model.
+
+As a reminder:
+
+Interaction model produces different intercepts and different slopes for each group.
+
+Additive models produce a single slope with different intercepts for each group.
 ```{r iris-all-species}
 iris.lmf <- lm(Petal.Width~Petal.Length * Species, data=iris)
 iris.lmr <- lm(Petal.Width~Petal.Length + Species, data=iris)
 summary(iris.lmf)
 summary(iris.lmr)
-anova(iris.lmf, iris.lmr)
+anova(iris.lmf, iris.lmr) #choose the additive model
 ```
+
+Like in the simple linear regression model, we will ad the fitted lines to see what's happening.
 
 ```{r plot1}
 ggplot(data=iris,
        aes(y=Petal.Width, x=Petal.Length, colour=Species)) +
   theme_bw() +
   geom_point() +
-  geom_abline(slope=0.23039, intercept=-0.09083, colour="#FF0000") +
-  geom_abline(slope=0.23039, intercept=-0.09083+0.43537, colour="#00FF00") +
-  geom_abline(slope=0.23039, intercept=-0.09038+0.83771, colour="#0000FF")
+  geom_abline(slope=0.23039, intercept=-0.09083, linetype=2, 
+              colour="#FF0000") +
+  geom_abline(slope=0.23039, intercept=-0.09083+0.43537, 
+              linetype=2, colour="#00FF00") +
+  geom_abline(slope=0.23039, intercept=-0.09038+0.83771, 
+              linetype=2, colour="#0000FF")
 ```
 
+## Predictions
+
+Predictions work the same way as before, except we need to include the other variable in our dataset. 
+
+Note: here I switched to prediction intervals to illustrate the difference.
 ```{r predict2}
 newdata <- data.frame(Petal.Length = c(2.5, 2.75, 3.5),
                       Species = c("setosa", "versicolor", "virginica"))
 
-pred <- as.data.frame(predict(iris.lmr, newdata, interval="confidence"))
+pred <- as.data.frame(predict(iris.lmr, newdata, interval="prediction"))
 
 iris.pred2 <- bind_cols(pred, newdata)
 glimpse(iris.pred2)
 ```
+
+And a plot to illustrate:
 ```{r plot4}
 ggplot(data=iris,
        aes(y=Petal.Width, x=Petal.Length, colour=Species)) +
@@ -112,3 +179,45 @@ ggplot(data=iris,
 ```
 
 
+# Bonus
+
+What does the model tell us if we include all data, but leave species out of the regression?  And why is it (probably) wrong?
+```{r extra}
+bad.lm <- lm(Petal.Width ~ Petal.Length, data=iris)
+summary(bad.lm)
+ggplot(data=iris,
+       aes(y=Petal.Width, x=Petal.Length, colour=Species)) +
+  theme_bw() +
+  geom_point() +
+  #new line
+  geom_abline(slope=0.416, intercept=-0.363, alpha=0.5, size=1.5) +
+  geom_abline(slope=0.23039, intercept=-0.09083, 
+              linetype=2, colour="#FF0000") +
+  geom_abline(slope=0.23039, intercept=-0.09083+0.43537, 
+              linetype=2, colour="#00FF00") +
+  geom_abline(slope=0.23039, intercept=-0.09038+0.83771, 
+              linetype=2, colour="#0000FF") +
+  scale_x_continuous(limits=c(0,7.5))
+```
+
+The new line seems to fit the data quite well. But we should dig deeper.
+```{r inspection}
+plot(bad.lm)
+#the QQ plot looks okay.
+# the gap in residuals vs fitted gives should tell us there might be some grouping in our data that isn't in the model. Just like we would suspect from plotting the raw data.
+```
+
+So why is this (probably) bad?
+
+The gap in the data tells us there is either missing data that collected or that there is a hidden grouping variable. We need some domain knowledge to know what the group variable might be and some data science / experimental design knowledge to see that there is probably missing data. With this new model (bad.lm) we might predict a Petal Width that is inappropriate for one off the species in the model. So, if we wanted to verify our prediction with new measurements, they wouldn't add up!
+
+For example, we predict the petal width of an iris flower with a petal length of 4.5 using the data from the model:
+
+```{r new predict}
+#slope, new x, intercept
+0.416 * 4.5 + -0.363
+```
+
+With that information, we might go look for plants in the wild to compare. If we found the setosa species, this measurement wouldn't make any sense at all, and even value we thought was useful to predict based on (petal length of 4.5) would seem like a poor choice.
+
+The "hidden" grouping variable is species and can be very important!
