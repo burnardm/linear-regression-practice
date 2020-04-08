@@ -209,7 +209,7 @@ plot(bad.lm)
 
 So why is this (probably) bad?
 
-The gap in the data tells us there is either missing data that collected or that there is a hidden grouping variable. We need some domain knowledge to know what the group variable might be and some data science / experimental design knowledge to see that there is probably missing data. With this new model (bad.lm) we might predict a Petal Width that is inappropriate for one off the species in the model. So, if we wanted to verify our prediction with new measurements, they wouldn't add up!
+The gap in the data tells us there is either missing data that not collected or that there is a hidden grouping variable. We need some domain knowledge to know what the group variable might be and some data science / experimental design knowledge to see that there is probably missing data. With this new model (bad.lm) we might predict a Petal Width that is inappropriate for one off the species in the model. So, if we wanted to verify our prediction with new measurements, they wouldn't add up!
 
 For example, we predict the petal width of an iris flower with a petal length of 4.5 using the data from the model:
 
